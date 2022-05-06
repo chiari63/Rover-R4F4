@@ -1,0 +1,301 @@
+//sensor de DH11 no pino 10
+//Sensor de muminosidade
+
+#include <Servo.h>
+Servo servo_base;
+Servo servo_dir;
+
+#include "DHT.h"
+#define DHTPIN 9
+#define DHTTYPE DHT11   // DHT 11
+
+DHT dht(DHTPIN, DHTTYPE);
+
+byte power = 180;
+byte power_E_D_F = 96;
+byte power_E_D_T = 96;
+
+byte power_E_T_F = 96;
+byte power_E_T_T = 96;
+
+byte power_D_D_F = 96;
+byte power_D_D_T = 96;
+
+byte power_D_T_F = 96;
+byte power_D_T_T = 96;
+
+byte var_TB = 0;
+
+int PWM_ME_T = 11;
+int PWM_ME_D = 3;
+int D_ME = 13;
+int E_ME = 12;
+
+byte  val_c;
+byte  val_d;
+byte  val_u;
+byte  val_dc;
+byte  val_cm;
+int   valor_o;
+
+float LUX = 0;
+
+int PWM_MD_T = 5;
+int PWM_MD_D = 6;
+int D_MD = 8;
+int E_MD = 7;
+long tempo_M = 0;
+int estado = 0;
+
+byte p_servo_base_a = 90;
+byte p_servo_dir_a = 90;
+
+byte p_servo_base_d = 90;
+byte p_servo_dir_d = 90;
+
+long  tempo_servo_base;
+long  tempo_servo_dir;
+
+char  servo = 0;
+byte   posicao_d;
+char   data_by_serial;
+
+float h = 0;
+float t = 0;
+//float f = 0;
+float hic = 0;
+
+void  start_servo (void){
+  if (servo == 'b'){
+    p_servo_base_d = 180;
+    p_servo_base_d = p_servo_base_d - posicao_d;}
+
+  if (servo == 'd'){
+    p_servo_dir_d = 180;
+    p_servo_dir_d = p_servo_dir_d - posicao_d;}
+
+  if (servo == 119){          //Frente
+    digitalWrite(D_ME, HIGH);
+    digitalWrite(E_ME, LOW);
+    digitalWrite(D_MD, HIGH);
+    digitalWrite(E_MD, LOW);
+    
+    estado = 1;
+    analogWrite(PWM_ME_D, power_E_D_F);
+    analogWrite(PWM_ME_T, power_E_T_F);
+    analogWrite(PWM_MD_D, power_D_D_F);
+    analogWrite(PWM_MD_T, power_D_T_F);
+    tempo_M = millis();}
+
+  if (servo == 120){          //Esquerda
+    digitalWrite(D_ME, LOW);
+    digitalWrite(E_ME, HIGH);
+    digitalWrite(D_MD, HIGH);
+    digitalWrite(E_MD, LOW);
+    
+    estado = 1;
+    analogWrite(PWM_ME_D, power_E_D_T);
+    analogWrite(PWM_ME_T, power_E_T_T);
+    analogWrite(PWM_MD_D, power_D_D_F);
+    analogWrite(PWM_MD_T, power_D_T_F);
+    tempo_M = millis();}
+
+  if (servo == 121){          //Direita
+    digitalWrite(D_ME, HIGH);
+    digitalWrite(E_ME, LOW);
+    digitalWrite(D_MD, LOW);
+    digitalWrite(E_MD, HIGH);
+    estado = 1;
+    analogWrite(PWM_ME_D, power_E_D_F);
+    analogWrite(PWM_ME_T, power_E_T_F);
+    analogWrite(PWM_MD_D, power_D_D_T);
+    analogWrite(PWM_MD_T, power_D_T_T);
+    tempo_M = millis();}
+
+  if (servo == 122){          //Tras
+    digitalWrite(D_ME, LOW);
+    digitalWrite(E_ME, HIGH);
+    digitalWrite(D_MD, LOW);
+    digitalWrite(E_MD, HIGH);
+    estado = 1;
+    analogWrite(PWM_ME_D, power_E_D_T);
+    analogWrite(PWM_ME_T, power_E_T_T);
+    analogWrite(PWM_MD_D, power_D_D_T);
+    analogWrite(PWM_MD_T, power_D_T_T);
+    tempo_M = millis();}
+
+  if (servo == 'q'){          //Para
+    para_Motor ();
+    tempo_M = millis();
+    estado = 0;}
+
+  if (servo == 'v'){          //Manda sensores
+    h = dht.readHumidity();
+    t = dht.readTemperature();
+    if (isnan(h) || isnan(t)) {
+      return;}
+    hic = dht.computeHeatIndex(t, h, false);
+
+    valor_o = hic * 10;
+    val_c = valor_o / 1000;
+    valor_o = valor_o - val_c * 1000;
+    val_d = valor_o / 100;
+    valor_o = valor_o - val_d * 100;
+    val_u = valor_o / 10;
+    valor_o = valor_o - val_u * 10;
+    val_dc = valor_o / 1;
+
+    Serial.print(val_c);
+    Serial.print(val_d);
+    Serial.print(val_u);
+    Serial.print(val_dc);
+
+    valor_o = h * 10;
+    val_c = valor_o / 1000;
+    valor_o = valor_o - val_c * 1000;
+    val_d = valor_o / 100;
+    valor_o = valor_o - val_d * 100;
+    val_u = valor_o / 10;
+    valor_o = valor_o - val_u * 10;
+    val_dc = valor_o / 1;
+
+    Serial.print(val_c);
+    Serial.print(val_d);
+    Serial.print(val_u);
+    Serial.print(val_dc);
+
+
+    LUX = analogRead(A0);
+    LUX = LUX*100;
+    LUX = LUX/680;
+    LUX = 100 - LUX;
+
+    valor_o = LUX * 10;
+    val_c = valor_o / 1000;
+    valor_o = valor_o - val_c * 1000;
+    val_d = valor_o / 100;
+    valor_o = valor_o - val_d * 100;
+    val_u = valor_o / 10;
+    valor_o = valor_o - val_u * 10;
+    val_dc = valor_o / 1;
+
+    Serial.print(val_c);
+    Serial.print(val_d);
+    Serial.print(val_u);
+    Serial.print(val_dc);}
+    
+    
+    if (servo == 's'){          //Turbo
+      if (var_TB == 0){
+        var_TB = 1;
+        //Serial.println("A");
+        power_E_D_F = 255;
+        power_E_D_T = 255;
+        power_E_T_F = 255;
+        power_E_T_T = 255;
+        power_D_D_F = 255;
+        power_D_D_T = 255;
+        power_D_T_F = 255;
+        power_D_T_T = 255;}
+        else{
+          //Serial.println("B");
+          var_TB = 0;
+          power_E_D_F = 96;
+          power_E_D_T = 96;
+          power_E_T_F = 96;
+          power_E_T_T = 96;
+          power_D_D_F = 96;
+          power_D_D_T = 96;
+          power_D_T_F = 96;
+          power_D_T_T = 96;}
+    }}
+
+void para_Motor (){
+  digitalWrite(D_ME, LOW);
+  digitalWrite(E_ME, LOW);
+  analogWrite(PWM_ME_D, 0);
+  analogWrite(PWM_ME_T, 0);
+ 
+  digitalWrite(D_MD, LOW);
+  digitalWrite(E_MD, LOW);
+  analogWrite(PWM_MD_D, 0);
+  analogWrite(PWM_MD_T, 0);}
+
+void setup(){
+  servo_base.attach(2);  // Servo da base conectado à porta digital 6
+  servo_dir.attach(4);  // Servo da base conectado à porta digital 6
+
+  pinMode (D_ME, OUTPUT);
+  digitalWrite(D_ME, LOW);
+  pinMode (E_ME, OUTPUT);
+  digitalWrite(E_ME, LOW);
+  analogWrite(PWM_ME_D, 0);
+  analogWrite(PWM_ME_T, 0);
+
+  pinMode (D_MD, OUTPUT);
+  digitalWrite(D_MD, LOW);
+  pinMode (E_MD, OUTPUT);
+  digitalWrite(E_MD, LOW);
+  analogWrite(PWM_MD_D, 0);
+  analogWrite(PWM_MD_T, 0);
+  
+  servo_base.write(p_servo_base_a);
+  delay(500);
+  servo_dir.write(p_servo_dir_a);
+  delay(1000);
+  
+  Serial.begin(9600);
+  dht.begin();
+
+  delay(300);}
+
+void loop(){
+  if (Serial.available() >= 1){
+    delay(50);
+    data_by_serial = 'a';
+    while ((data_by_serial != 'b') && (data_by_serial != 'd') && (data_by_serial != 'w') && (data_by_serial != 'x') && (data_by_serial != 'y') && (data_by_serial != 'z') && (Serial.available() != 0) && (data_by_serial != 'v') && (data_by_serial != 's')){
+      data_by_serial = Serial.read();
+      //Serial.println("D");
+      //Serial.println(data_by_serial);
+      delay(20);}
+      
+      if (data_by_serial == 'v'){
+        servo = data_by_serial;
+        start_servo();}
+      
+      if (data_by_serial == 's'){
+        //Serial.println("C");
+        servo = data_by_serial;
+        start_servo();}
+      
+      if (Serial.available() != 0){
+        servo = data_by_serial;
+        delay(20);
+        posicao_d = Serial.read();
+        start_servo();}}
+
+  if ((estado == 1) && ((millis() - tempo_M) > 150)){
+    //Serial.println('s');
+    para_Motor ();
+    estado = 0;}
+
+  if ((p_servo_base_a != p_servo_base_d) && ((millis() - tempo_servo_base) >= 10)){
+    if (p_servo_base_a > p_servo_base_d){
+      p_servo_base_a--;
+      servo_base.write(p_servo_base_a);
+      tempo_servo_base = millis();}
+      else{
+        p_servo_base_a++;
+        servo_base.write(p_servo_base_a);
+        tempo_servo_base = millis();}}
+
+  if ((p_servo_dir_a != p_servo_dir_d) && ((millis() - tempo_servo_dir) >= 10)){
+    if (p_servo_dir_a > p_servo_dir_d){
+      p_servo_dir_a--;
+      servo_dir.write(p_servo_dir_a);
+      tempo_servo_dir = millis();}
+      else{
+        p_servo_dir_a++;
+        servo_dir.write(p_servo_dir_a);
+        tempo_servo_dir = millis();}}}
+
